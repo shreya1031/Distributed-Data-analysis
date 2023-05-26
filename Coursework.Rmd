@@ -1,0 +1,667 @@
+---
+title: "DDA"
+author: "shreya"
+date: "16/02/2022"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+#Libraries to import
+library("tidyverse")
+library("skimr")
+library("dplyr")
+library("reshape2")
+library("devtools")
+library("ggplot2")
+library("magrittr")
+library("gridExtra")
+```
+
+*Introduction:-
+
+This Rmarkdown file consists of dataset named Life expectancy, which will be used for the entire coursework. Starting with data preparation intially, which is only possible after loading the dataset. 
+Data preparation depicts the entire summary of the dataset including number of rows and columns. Being a data scientist, keeping the data safe is a huge responsibility so during data preparation is made a replicated dataset from the original dataset.
+
+```{r}
+#Loading the life expectancy dataset.
+getwd()
+setwd("H:/Brunel/TERM-2/Distributed data analysis")
+data<-read.csv("Life expectancy data.csv", stringsAsFactors = T)
+#Data copies 
+data1<-data
+#Inspecting the data to get an insight.
+dim(data)
+```
+
+*This can be basically called as the pre-implementation stage which is must needed before deriving any machine learning models.However, it becomes necessary to understand the dataset first. Functions such as str(), summary() and glimpse() have been used to have an exposure to the data. These functions provides us entire summary of the given datast including data types , number of missing values, column names and the dimensions. These functions are more useful when it comes to the data types, by looking at the original data type a decision can be made whether it needs to be converted or not.
+
+
+```{r}
+#Exploring the dataset
+str(data)
+```
+
+```{r}
+#Life expectancy of an individual is in age and ideally having age values in decimal digits does not make any sense. So, here I have converted the values into integer.
+data$Life.expectancy<-as.integer(data$Life.expectancy)
+data$Country<-as.factor(data$Country)
+#data$Year<-as.numeric(data$Year)
+```
+
+```{r}
+glimpse(data)
+#skim(data)
+```
+**Summary functions gives entire details of the dataset, including minimun, maximum, median, mean and the quantiles.
+```{r}
+summary(data)
+```
+
+-------------------------------------------------------------------------------------------------------------------------------
+**Though data preparation is useful for having a deeper insight towards the data. The second stage after this is data cleaning which is useful to optimise the dataset. Cleaning includes rectification of the data types, removing or imputing the missing values as well as outliers, normalising the data sometimes. 
+
+```{r}
+# Getting an insight for missing values.
+data_NA_count <- apply(is.na(data), 2, sum)
+data_NA_count
+```
+```{r}
+#Columns such as Alcohol, Hepatitis.B, Total.expenditure, Population, GDP, Income composition and Schooling has high number of NA's which can not be removed, if we remove all these NA's then we will be loosing lot of our data.
+
+#note: NA should be removed to calculate the median!
+median_val <- median(data$Alcohol, na.rm = T)
+#   then set Alcohol missing values to its median
+data[is.na(data$Alcohol), 'Alcohol'] = median_val
+
+#Hepatitis.B
+median_val <- median(data$Hepatitis.B, na.rm = T)
+data[is.na(data$Hepatitis.B), 'Hepatitis.B'] = median_val
+
+#BMI
+median_val <- median(data$BMI, na.rm = T)
+data[is.na(data$BMI), 'BMI'] = median_val
+
+#Total.expenditure
+median_val <- median(data$Total.expenditure, na.rm = T)
+data[is.na(data$Total.expenditure), 'Total.expenditure'] = median_val
+
+#Population
+median_val <- median(data$Population, na.rm = T)
+data[is.na(data$Population), 'Population'] = median_val
+
+#GDP
+median_val <- median(data$GDP, na.rm = T)
+data[is.na(data$GDP), 'GDP'] = median_val
+
+#Income composition of resources
+median_val <- median(data$Income.composition.of.resources, na.rm = T)
+data[is.na(data$Income.composition.of.resources), 'Income.composition.of.resources'] = median_val
+
+#Schooling
+median_val <- median(data$Schooling, na.rm = T)
+data[is.na(data$Schooling), 'Schooling'] = median_val
+
+#Removing rest of the instances with missing values as we have already imputed majority of the data.
+data_noNA<-na.omit(data)
+
+#size of data before and after removing NA's
+dim(data)
+dim(data_noNA)
+#view(data_noNA)
+```
+-------------------------------------------------------------------------------------------------------------------------------
+
+                                                   ***********EDA**************
+                                                   
+**Exploratory data analysis.
+**NA imputation has been done through pyspark and the rectified file has been loaded.
+```{r}
+#Loading the life expectancy dataset.
+getwd()
+setwd("H:/Brunel/TERM-2/Distributed data analysis")
+data_noNA<-read.csv("data_noNA.csv", stringsAsFactors = T)
+```
+
+```{r}
+data_NA_count <- apply(is.na(data_noNA), 2, sum)
+data_NA_count
+```
+```{r}
+glimpse(data_noNA)
+```
+
+```{r}
+data_noNA$Population<-as.numeric(data_noNA$Population)
+```
+**Outliers:-
+Ouliers are basically the discrete data points which are different from the rest of (majority data points). Thus, these points affect the accuracy of the model which has been made further. Identifying(Analysing) and removing it will probably make the model better as it will give us the best line fit.
+```{r}
+#Boxplot is the easiest and most appropriate ways to identify the outliers.
+boxplot(data_noNA$Life_expectancy,xlab="Life_expectancy")
+boxplot(data_noNA$Adult_Mortality,xlab="Adult_Mortality")
+boxplot(data_noNA$infant_deaths,xlab="infants_deaths")
+boxplot(data_noNA$Alcohol,xlab="Alcohol")
+boxplot(data_noNA$percentage_expenditure,xlab="percentage_expenditure")
+boxplot(data_noNA$Hepatitis_B,xlab="Hepatits_B")
+boxplot(data_noNA$Measles,xlab="Measles")
+boxplot(data_noNA$BMI,xlab="BMI")
+boxplot(data_noNA$under_five_deaths,xlab="under_five_deaths")
+boxplot(data_noNA$Polio,xlab="Polio")
+boxplot(data_noNA$Total_expenditure,xlab="Total_expenditure")
+boxplot(data_noNA$Diphtheria,xlab="Diptheria")
+boxplot(data_noNA$HIV_AIDS,xlab="HIV_AIDS")
+boxplot(data_noNA$GDP,xlab="GDP")
+boxplot(data_noNA$Population,xlab="Popualtion")
+boxplot(data_noNA$thinness__10_19_years,xlab="thinness_10_19_years")
+boxplot(data_noNA$thinness_5_9_years,xlab="thinness_5_9_years")
+boxplot(data_noNA$Income_composition_of_resources,xlab="Income_composition_of_resources")
+boxplot(data_noNA$Schooling,xlab="Schooling")
+
+```
+**Getting the maximum of the box$out whose outliers are below the minimum value.
+and 
+minimum of the box$out whose outliers are above the maximum value.
+```{r}
+#outliers detection
+### removing outliers
+  boxplot1 <- boxplot(data_noNA$Life_expectancy, plot = F)
+  life.expectancy_threshold <- max(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$Adult_Mortality, plot = F)
+  adult.mortality_threshold <- min(boxplot1$out)
+
+  boxplot1 <- boxplot(data_noNA$infant_deaths, plot = F)
+  infant.deaths_threshold <- min(boxplot1$out)
+
+  boxplot1 <- boxplot(data_noNA$Alcohol, plot = F)
+  alcohol_threshold <- min(boxplot1$out)
+
+  boxplot1 <- boxplot(data_noNA$percentage_expenditure, plot = F)
+  percent.expenditure_threshold <- min(boxplot1$out)
+
+  #boxplot1 <- boxplot(data_noNA$Hepatitis_B, plot = F)
+  #hepatitis.B_threshold <- max(boxplot1$out)
+
+  boxplot1 <- boxplot(data_noNA$Measles, plot = F)
+  measles_threshold <- min(boxplot1$out)
+
+  #boxplot1 <- boxplot(data_noNA$BMI, plot = F)
+  #bmi_threshold <- min(boxplot1$out)
+
+  boxplot1 <- boxplot(data_noNA$under_five_deaths, plot = F)
+  under.5.deaths_threshold <- min(boxplot1$out)
+
+  boxplot1 <- boxplot(data_noNA$Polio, plot = F)
+  polio_threshold <- max(boxplot1$out)
+
+  boxplot1 <- boxplot(data_noNA$Total_expenditure, plot = F)
+  total.expenditure_threshold <- min(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$Diphtheria, plot = F)
+  diptheria_threshold <- max(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$HIV_AIDS, plot = F)
+  hiv.aids_threshold <- min(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$GDP, plot = F)
+  gdp_threshold <- min(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$Population, plot = F)
+  population_threshold <- min(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$thinness__10_19_years, plot = F)
+  thin.10.19_threshold <- min(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$thinness_5_9_years, plot = F)
+  thin.5.9_threshold <- min(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$Income_composition_of_resources, plot = F)
+  income.comp_threshold <- max(boxplot1$out)
+  
+  boxplot1 <- boxplot(data_noNA$Schooling, plot = F)
+  schooling_threshold <- min(boxplot1$out)
+```
+
+```{r}
+#filtering the data (removing the outliers)
+data_filter <- data_noNA$Life_expectancy > life.expectancy_threshold &
+  data_noNA$Adult_Mortality < adult.mortality_threshold &
+  data_noNA$infant_deaths < infant.deaths_threshold &
+  data_noNA$Alcohol < alcohol_threshold &
+  data_noNA$percentage_expenditure < percent.expenditure_threshold &
+  #data_noNA$Hepatitis_B > hepatitis.B_threshold &
+  data_noNA$Measles < measles_threshold &
+  #data_noNA$BMI > bmi_threshold &
+  data_noNA$under_five_deaths < under.5.deaths_threshold &
+  data_noNA$Polio > polio_threshold &
+  data_noNA$Total_expenditure < total.expenditure_threshold &
+  data_noNA$Diphtheria > diptheria_threshold &
+  data_noNA$HIV_AIDS < hiv.aids_threshold &
+  data_noNA$GDP < gdp_threshold &
+  data_noNA$Population < population_threshold &
+  data_noNA$thinness__10_19_years < thin.10.19_threshold &
+  data_noNA$thinness_5_9_years < thin.5.9_threshold &
+  data_noNA$Income_composition_of_resources > income.comp_threshold 
+
+data_clean <- data_noNA[data_filter,]
+```
+**Checking duplicacy in the dataset.
+```{r}
+duplicacy <- sum(duplicated(data_clean))
+duplicacy
+```
+
+```{r}
+colnames(data_clean)
+```
+
+```{r}
+data_clean <- rename(data_clean, 
+                     "Life_exp" = "Life_expectancy",
+                     "Adult.mort" = "Adult_Mortality",
+                     "Under5death" = "under_five_deaths",
+                     "Total_exp" = "Total_expenditure",
+                     "Thin10_19" = "thinness__10_19_years",
+                     "Thin5_9" = "thinness_5_9_years",
+                     "ICR" = "Income_composition_of_resources")
+```
+**Made a new dataset using the group by function to articulate life expectancy of each country(developed/developing).
+```{r}
+#Average life expectancy in every country 
+Life_expectancy_mean<-aggregate(x = data_noNA$Life_expectancy,      # Specify data column
+          by = list(data_noNA$Country,data_noNA$Status),            # Specify group indicator
+          FUN = mean)                                               # Specify function (i.e. mean)
+```
+
+```{r}
+#Creates a dataframe data2 which has average life expectancy of a country 
+data2<-data.frame(Life_expectancy_mean)
+data2<-rename(data2, Countries = Group.1
+         , Status = Group.2,
+          Avg_life_expectancy = x)
+#copying data.
+data12<-data2
+```
+**understanding the relationships between the columns.
+```{r}
+#Corelation
+cor(data_clean[,4:22])
+```
+**Graphical representation using heatmap.
+```{r}
+# Corelation matrix.
+cor_matrix <- round(cor(data_clean[,4:22]),2)
+melted_cormat <- melt(cor_matrix)
+# Heatmap
+ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+ theme(axis.text.x = element_text(angle = 90, vjust = 1, 
+    size = 10, hjust = 1))+
+ coord_fixed()
+
+```
+** Analysing life expectancy. This graph looks normally distributed also known as Gaussian distribution  which means that majority of the data are relatively similar in other words data points occur within a small range of values.
+```{r}
+hist(data_clean$Life_exp, prob = TRUE , main="Histogram of life expectancy")
+grid(nx = NA, ny = NULL, lty = 2, col = "gray", lwd = 1)
+x <- seq(min(data_clean$Life_exp), max(data_clean$Life_exp), length = 40)
+f <- dnorm(x, mean = mean(data_clean$Life_exp), sd = sd(data_clean$Life_exp))
+hist(data_clean$Life_exp, prob = TRUE, add = TRUE, col = "lightblue")
+lines(x, f, col = "red", lwd = 2)
+```
+
+```{r}
+data_clean$Status<-as.factor(data_clean$Status)
+```
+**Graphs ehich helps understanding the relationships within the columns.
+
+The first one ia scatter plot which describes the impact of schooling on life expectancy within developed and developing countries.
+```{r}
+
+ggplot( data_clean , aes(x=Schooling, y=Life_exp, color=Status )) + 
+  geom_point(size=1) +  
+  facet_wrap(~Status) +
+  theme(legend.position="none") +
+  geom_smooth(formula = y ~ x, method = "lm")
+```
+**this is also a scatter plot which depicts the difference of population between developed and developing countries.
+```{r}
+d<-ggplot(data_clean,aes(x=Population,y=Life_exp, color=Status)) +
+  geom_point(alpha=0.5) + 
+  labs(x="Population",
+       title="Effect of population on life expectancy") +
+  scale_y_log10()+
+  scale_x_log10() +
+  stat_ellipse(type = "norm")
+d
+```
+
+
+```{r}
+b<-ggplot(data_clean, 
+       aes(x = BMI ,
+           fill = Status)) +
+  geom_density(alpha = 0.7) +
+  labs(title = "Life expectancy of a country")
+b
+```
+```{r}
+# Ellipse by groups
+p <- ggplot(data_clean, aes(Polio, Life_exp, color = Status)) +
+  geom_point() +
+  scale_color_manual(values=c('red','darkGreen'))
+p + stat_ellipse(type = "norm")
+```
+**A horizontal bar chart that shows top 20 countries possessing the highest life expectancy. 
+```{r}
+# reordering bars in barplot
+a<-data2 %>%
+  head(20)%>%
+  ggplot(aes(x=reorder(Countries,Avg_life_expectancy), y=Avg_life_expectancy))+
+  geom_col(fill="maroon") + 
+  xlab("Countries") +
+  coord_flip()
+a
+```
+
+```{r}
+#By looking at the previous correlation heatmap, we can say that life expectancy is highly correlated with income composition.
+# Set color by cond
+c<-ggplot(data_clean, aes(x=ICR, y=Life_exp, color = Status)) + 
+  geom_point(shape=1) +
+  geom_smooth(formula = y ~ x, method = "lm")
+c
+```
+
+```{r}
+data2$Status<-as.factor(data2$Status)
+```
+
+```{r}
+# Boxplot using ggplot2 package
+bp<- ggplot(data2, mapping = aes(x=Status,y=Avg_life_expectancy,fill=Status))+
+  geom_boxplot()+
+  theme_classic()+
+  labs()
+bp + scale_fill_manual(values=c("#56B4E9", "#E69F00"))
+```
+
+```{r}
+grid.arrange(a,b,bp,p,nrow=2)
+```
+**Supervised machine learning PCA (Principle Component Analysis).
+
+```{r}
+data_clean1<-data_clean
+dim(data_clean1)
+```
+
+```{r}
+data_clean1$Country<-as.factor(data_clean1$Country)
+data_clean1$Status<-as.numeric(data_clean1$Status)
+data_clean1$Year<-as.numeric(data_clean1$Year)
+```
+
+```{r}
+df<-subset(data_clean1[,4:22])
+```
+
+```{r}
+#Calculating pca by removing the target variable.
+pc_df<-prcomp(df[,-1],center = T,scale. = T)
+pc_df
+
+Life_expectancy<-df$Life_exp #Target variable
+```
+```{r}
+#Description of how much each pc's explains.
+summary(pc_df)
+```
+
+```{r}
+attributes(pc_df)
+```
+```{r}
+# calculate the proportion of explained variance (PEV) from the std values
+pc_df_var <- pc_df$sdev^2
+pc_df_var
+pc_df_PEV <- pc_df_var / sum(pc_df_var)
+pc_df_PEV
+```
+
+```{r}
+#A scree plot that helps deciding the number of components to be considered further.
+#According to the plot first 10 PC's should be taken into consideration.
+opar <- par(no.readonly = TRUE)
+plot(
+  cumsum(pc_df_PEV),
+  ylim = c(0,1),
+  xlab = 'PC',
+  ylab = 'cumulative PEV',
+  pch = 20,
+  col = 'orange'
+)
+abline(h = 0.8, col = 'red', lty = 'dashed')
+par(opar)
+```
+**
+
+```{r}
+#Extracting the loadings from actual dataset. Target variable has been attached at the end to have a pc model.
+pca_df<-as.data.frame(pc_df$x)
+pca_df <- pca_df[,1:11]
+pca_data <- cbind(pca_df,Life_expectancy)
+```
+
+```{r}
+write.csv(Final_data,"H:\\Brunel\\TERM-2\\Distributed data analysis\\Final_data.csv")
+```
+
+**Machine Learning technique.
+##Neural networks
+```{r}
+library("neuralnet")
+```
+
+
+```{r}
+# transform the data using a min-max function
+#   note: this will make the data more suitable for use with NN
+#     as the attribute values will be on a narrow interval around zero
+# first define a MinMax function
+MinMax <- function(x){
+  tx <- (x - min(x)) / (max(x) - min(x))
+  return(tx)
+}
+
+data_clean_minmax <- apply(data_clean1[,4:22], 2, MinMax)
+```
+
+```{r}
+# the matrix needs to be 'cast' into a data frame
+#   note: R has an as.data.frame function for this purpose
+data_clean_minmax <- as.data.frame(data_clean_minmax)
+```
+
+```{r}
+# create a 70/30 training/test set split
+n_rows <- nrow(data_clean_minmax)
+n_rows
+# sample 70% (n_rows * 0.7) indices in the ranges 1:nrows
+training_idx <- sample(n_rows, n_rows * 0.7)
+# filter the data frame with the training indices (and the complement)
+training_dc_minmax <- data_clean_minmax[training_idx,]
+test_dc_minmax <- data_clean_minmax[-training_idx,]
+```
+
+```{r}
+# define a formula for predicting strength
+nn_formula = Life_exp ~ Adult.mort + infant_deaths + Alcohol +  percentage_expenditure + Hepatitis_B + Measles + BMI + Under5death + Polio + Total_exp + Diphtheria + HIV_AIDS + GDP + Population + Thin10_19 + Thin5_9 + ICR + Schooling
+```
+
+```{r}
+# train a neural network with 1 hidden node
+nn_1 <- neuralnet(nn_formula, hidden = c(1), data = training_dc_minmax,linear.output = TRUE)
+plot(nn_1)
+
+```
+
+```{r}
+# train a neural network with 2 hidden layers(5 in each).
+nn_55 <- neuralnet(nn_formula, hidden = c(5,5), data = training_dc_minmax,linear.output = TRUE)
+plot(nn_55)
+```
+
+```{r}
+# train a neural network with 2 hidden node(5 in one and 3 in second one).
+nn_53 <- neuralnet(nn_formula, hidden = c(5,3), data = training_dc_minmax,linear.output = TRUE)
+plot(nn_53)
+```
+
+```{r}
+#Prediction based on the training set on all rows removing the target variable.
+output1 <- neuralnet::compute(nn_1,test_dc_minmax[,-1])
+output55 <- neuralnet::compute(nn_55,test_dc_minmax[,-1])
+output53 <- neuralnet::compute(nn_53,test_dc_minmax[,-1])
+```
+
+```{r}
+#Predicting the target variable for three different models.
+results <- data.frame(
+  actual = test_dc_minmax$Life_exp,
+  nn_1 = output1$net.result,
+  nn_55 = output55$net.result,
+  nn_53 = output53$net.result
+)
+results
+```
+
+```{r}
+# calculate the correlation between actual and predicted values to identify the best predictor
+cor(results[,'actual'], results[,c('nn_1','nn_55','nn_53')])
+```
+
+```{r}
+# plot actual vs predicted values for the worst (blue) and best predictor (orange)
+#   note: points is used to add points on a graph
+plot(
+  results$actual,
+  results$nn_1,
+  col = 'blue',
+  xlab = 'actual strength',
+  ylab = 'predicted strength',
+  xlim = c(0,1),
+  ylim = c(0,1)
+)
+points(
+  results$actual,
+  results$nn_55,
+  col = 'orange'
+)
+points(
+  results$actual,
+  results$nn_53,
+  col='green'
+)
+abline(a = 0, b = 1, col = 'red', lty = 'dashed')
+legend(
+  'topleft',
+  c('nn_1', 'nn_55','nn_53'),
+  pch = 1,
+  col = c('blue', 'orange','green'),
+  bty = 'n'
+)
+```
+**Checking the accuracy of each model in order to select one model.
+
+```{r}
+#checking accuracy of 1st model with 1 node in the hidden laye.
+result1 <- data.frame(actual = test_dc_minmax$Life_exp , prediction = output1$net.result)
+result1
+```
+
+```{r}
+#Calculating the accuracy. 
+#The results shows pretty high accuracy of 98%.
+predicted=result1$prediction * abs(diff(range(test_dc_minmax$Life_exp))) + min(test_dc_minmax$Life_exp)
+actual=result1$actual * abs(diff(range(test_dc_minmax$Life_exp))) + min(test_dc_minmax$Life_exp)
+comparison=data.frame(predicted,actual)
+deviation=((actual-predicted)/actual)
+comparison=data.frame(predicted,actual,deviation)
+accuracy=1-abs(mean(deviation))
+accuracy
+```
+```{r}
+result2 <- data.frame(actual = test_dc_minmax$Life_exp , prediction = output55$net.result)
+result2
+```
+
+```{r}
+#Calculating the accuracy.
+#This model has an accuracy of 98.68%.
+predicted=result2$prediction * abs(diff(range(test_dc_minmax$Life_exp))) + min(test_dc_minmax$Life_exp)
+actual=result2$actual * abs(diff(range(test_dc_minmax$Life_exp))) + min(test_dc_minmax$Life_exp)
+comparison=data.frame(predicted,actual)
+deviation=((actual-predicted)/actual)
+comparison=data.frame(predicted,actual,deviation)
+accuracy=1-abs(mean(deviation))
+accuracy
+```
+```{r}
+result3 <- data.frame(actual = test_dc_minmax$Life_exp , prediction = output53$net.result)
+result3
+```
+
+```{r}
+#Calculating the accuracy.This model also has 98% accuracy.
+predicted=result3$prediction * abs(diff(range(test_dc_minmax$Life_exp))) + min(test_dc_minmax$Life_exp)
+actual=result3$actual * abs(diff(range(test_dc_minmax$Life_exp))) + min(test_dc_minmax$Life_exp)
+comparison=data.frame(predicted,actual)
+deviation=((actual-predicted)/actual)
+comparison=data.frame(predicted,actual,deviation)
+accuracy=1-abs(mean(deviation))
+accuracy
+```
+
+
+```{r}
+#Contingency table of model2 which had 2 hidden layers 5 nodes in each. 
+prediction1 <- output55$net.result * (max(data_clean1[-training_idx,4])-min(data_clean1[-training_idx,4])) + min(data_clean1[-training_idx,4])
+actual1 <- data_clean1[-training_idx,4]
+table(actual1,round(prediction1))
+```
+
+```{r}
+# Plot regression line
+plot(result2$actual, result3$prediction, col = "red", 
+     main = 'Real vs Predicted')
+abline(0, 1, lwd = 3)
+```
+
+```{r}
+# Compute mean squared error for nn_1
+pr.nn <- output53$net.result * (max(data_clean$Life_exp) - min(data_clean$Life_exp)) 
+                                              + min(data_clean$Life_exp)
+
+test.r <- (test_dc_minmax$Life_exp) * (max(data_clean$Life_exp) - min(data_clean$Life_exp)) + 
+  
+                                            min(data_clean$Life_exp)
+
+MSE.nn <- sum((test.r - pr.nn)^2) / nrow(test_dc_minmax)
+```
+
+
+
+
